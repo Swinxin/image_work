@@ -24,6 +24,7 @@ def create_image_lists(sess,testing_percentage,validation_percentage):
     test_y = []
     validation_x = []
     validation_y = []
+
     extensions = ['jpg', 'jpeg']#['jpg', 'jpeg', 'JPG', 'JPEG'] ignore low or upper case
     for label,sub_dir in enumerate(sub_dirs[1:]):
         dir_name = os.path.basename(sub_dir)
@@ -37,12 +38,13 @@ def create_image_lists(sess,testing_percentage,validation_percentage):
         i = 0
         for file_name in file_list:
             image_raw_data = gfile.FastGFile(file_name,'rb').read()
-            image = tf.image.decode_jpeg(image_raw_data)
+            image = tf.image.decode_jpeg(image_raw_data,channels=3)#0JPEG-encoded 1gray,3RGB
             if image.dtype != tf.float32:
                 image = tf.image.convert_image_dtype(image,dtype=tf.float32)
             image = tf.image.resize_images(image,[299,299])
             try:
                 image_value = sess.run(image)
+#                print(image_value.shape)
                 i += 1
             except tf.errors.InvalidArgumentError as e:
                 continue
@@ -62,12 +64,14 @@ def create_image_lists(sess,testing_percentage,validation_percentage):
     np.random.shuffle(train_x)
     np.random.set_state(state)
     np.random.shuffle(train_y)
-    return np.asarray([train_x,train_y,validation_x,validation_y,test_x,test_y])
+    return np.array([train_x,train_y,validation_x,validation_y,test_x,test_y])
+
 
 def main():
     with tf.Session() as sess:
-        processed_data = create_image_lists(sess,5,5)
-#        np.save(OUTPUT_FILE,processed_data)
+        processed_data = create_image_lists(sess,TEST_PERCENTAGE,TEST_PERCENTAGE)
+#    return processed_data
+        np.save(OUTPUT_FILE,processed_data)
 
 if __name__ == "__main__":
-    main()
+    a = main()

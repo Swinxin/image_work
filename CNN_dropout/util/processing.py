@@ -157,23 +157,69 @@ def flip_v(img):
         v = v.reshape(height,width,1)
     return v
 
+def prepare_image(image, target_width = 128, target_height = 128, max_zoom = 0.2):
+    """Zooms and crops the image randomly for data augmentation."""
+
+    # First, let's find the largest bounding box with the target size ratio that fits within the image
+    height = image.shape[0]
+    width = image.shape[1]
+    image_ratio = width / height
+    target_image_ratio = target_width / target_height
+    crop_vertically = image_ratio < target_image_ratio
+    crop_width = width if crop_vertically else int(height * target_image_ratio)
+    crop_height = int(width / target_image_ratio) if crop_vertically else height
+        
+    # Now let's shrink this bounding box by a random factor (dividing the dimensions by a random number
+    # between 1.0 and 1.0 + `max_zoom`.
+    resize_factor = np.random.rand() * max_zoom + 1.0
+    crop_width = int(crop_width / resize_factor)
+    crop_height = int(crop_height / resize_factor)
+    
+    # Next, we can select a random location on the image for this bounding box.
+    x0 = np.random.randint(0, width - crop_width)
+    y0 = np.random.randint(0, height - crop_height)
+    x1 = x0 + crop_width
+    y1 = y0 + crop_height
+    
+    # Let's crop the image using the random bounding box we built.
+    image = image[y0:y1, x0:x1]
+
+    # Let's also flip the image horizontally with 50% probability:
+    if np.random.rand() < 0.5:
+        image = np.fliplr(image)
+
+    # Now, let's resize the image to the target dimensions.
+    image = resize(image, (target_width, target_height))
+    
+    # Finally, let's ensure that the colors are represented as
+    # 32-bit floats ranging from 0.0 to 1.0 (for now):
+    return image
+
+def get_more_img():
+    import time
+    timestamp = lambda:int(time.time() * 1000)
+    path = "C:\\Users\\VasiliShi\\Desktop\\neg/"
+    files = os.listdir("C:\\Users\\VasiliShi\\Desktop\\new_ad")
+    for file in files:
+        img = cv2.imread(os.path.join("C:\\Users\\VasiliShi\\Desktop\\new_ad",file))
+        new_img = flip_h(img) # horizontal
+        cv2.imwrite(path+"%s.jpg"%timestamp(),new_img)
+            
+        new_img = flip_v(img) # horizontal
+        cv2.imwrite(path+"%s.jpg"%timestamp(),new_img)
+        
+        for _ in range(18):
+            angle = np.int(np.random.uniform(-1,1) * 45)
+            new_img = rotate(img,angle)
+            cv2.imwrite(path+"%s.jpg"%timestamp(),new_img)
 if __name__ == "__main__":
     import time
-#    timestamp = lambda:int(time.time() * 1000)
-#    path = "../data/neg"
-#    files = os.listdir("../data/neg_raw")
-#    for file in files:
-#        img = cv2.imread(os.path.join("../data/neg_raw",file))
-#        new_img = flip_h(img) # horizontal
-#        cv2.imwrite("../data/neg/%s.jpg"%timestamp(),new_img)
-#            
-#        new_img = flip_v(img) # horizontal
-#        cv2.imwrite("../data/neg/%s.jpg"%timestamp(),new_img)
-#        
-#        for _ in range(4):
-#            angle = np.int(np.random.uniform(-1,1) * 45)
-#            new_img = rotate(img,angle)
-#            cv2.imwrite("../data/neg/%s.jpg"%timestamp(),new_img)
-    img = cv2.imread("11165040.jpg")
-    img = resize(img)
-    show(img)
+    timestamp = lambda:int(time.time() * 1000)
+    path = "C:\\Users\\VasiliShi\\Desktop\\neg/test/"
+    files = os.listdir("C:\\Users\\VasiliShi\\Desktop\\new_ad")
+    for file in files:
+        for _ in range(5):
+            img = cv2.imread(os.path.join("C:\\Users\\VasiliShi\\Desktop\\new_ad",file))
+            new_img = prepare_image(img)
+            cv2.imwrite(path+"%s.jpg"%timestamp(),new_img)
+            

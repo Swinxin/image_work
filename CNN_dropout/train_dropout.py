@@ -22,9 +22,9 @@ def reset_graph(seed=42):
     tf.reset_default_graph()
     tf.set_random_seed(seed)
     np.random.seed(seed)
-    
+
 reset_graph()
-    
+
 height = 100
 width = 100
 
@@ -49,7 +49,7 @@ with tf.name_scope("inputs"):
     X = tf.placeholder(tf.float32,shape=[None,128,128,3],name='X')
     training = tf.placeholder_with_default(False,shape=[],name="training")
     y = tf.placeholder(tf.int32,shape=[None],name='y')
-    
+
 conv1 = tf.layers.conv2d(X,filters=32, kernel_size = 5, \
                          strides=1,padding="SAME",activation=tf.nn.relu,name='conv1')
 
@@ -67,7 +67,10 @@ with tf.name_scope("fc1"):
     fc1 = tf.layers.dense(pool2_flat,64,activation=tf.nn.relu,name="fc1")
 with tf.name_scope("output"):
     fc1_drop = tf.layers.dropout(fc1,0.5,training=training)
-    logit = tf.layers.dense(fc1_drop,n_outputs,name="output")
+    logit = tf.layers.dense(fc1_drop,n_outputs,name="y_output")
+    #小trick
+    b = tf.constant(value=1,dtype=tf.float32)
+    logits_eval = tf.multiply(logit,b,name='y_logit')#后面get_by_tensor
     y_prob = tf.nn.softmax(logit,name='y_prob')#这个后面没有用到,预测用
 
 with tf.name_scope("train"):
@@ -76,7 +79,7 @@ with tf.name_scope("train"):
     loss = tf.reduce_mean(xentropy)
     optimizer = tf.train.AdamOptimizer()
     training_op = optimizer.minimize(loss)
-    
+
 with tf.name_scope("eval"):
     correct = tf.nn.in_top_k(logit, y, 1)
     accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
@@ -101,7 +104,7 @@ with tf.Session() as sess:
         acc_train = accuracy.eval(feed_dict={X: X_batch, y: y_batch})
         X_test_batch,y_test_batch = p.test.next_batch(40)
         acc_test = accuracy.eval(feed_dict={X: X_test_batch, y: y_test_batch})
-        
+
         print(epoch, "Train accuracy:", acc_train,"test accuracy:", acc_test)
     save_path = saver.save(sess, "./model/img.pk")
 
